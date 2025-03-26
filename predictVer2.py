@@ -3,15 +3,27 @@ import cv2
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-
+from sklearn.preprocessing import MinMaxScaler
 # Huấn luyện mô hình SVC từ dữ liệu digits
-digits = datasets.load_digits()
-X_train, X_test, y_train, y_test = train_test_split(
-    digits.data, digits.target, test_size=0.2, random_state=42
-)
-model = SVC(gamma=0.001)
-model.fit(X_train, y_train)
+digits_data = datasets.load_digits() # Load dataset handwritten
+y = digits_data.target
+X = digits_data.images.reshape((len(digits_data.images), -1))
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) # split data into train and test
 
+
+
+# Setup model
+X_train, X_test, y_train, y_test = train_test_split(        
+    X, y, test_size=0.2, random_state=42
+)
+
+scaler = MinMaxScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+
+model = SVC(C=100, gamma=0.01, kernel='rbf')
+model.fit(X_train, y_train)
 def get_number(image_bytes):
     # Chuyển ảnh byte thành mảng numpy
     np_arr = np.frombuffer(image_bytes, np.uint8)
@@ -44,7 +56,8 @@ def get_number(image_bytes):
     resized = cv2.resize(square, (8, 8), interpolation=cv2.INTER_AREA)
     normalized = (resized / 255.0) * 16
     vector = normalized.flatten().astype(np.float32)
-
+    vector = vector.reshape(1, -1) 
+    vector = scaler.transform(vector)
     # Dự đoán
-    prediction = model.predict([vector])
+    prediction = model.predict(vector)
     return prediction
