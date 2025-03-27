@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dự đoán chữ số viết tay</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white shadow-lg rounded-lg p-6 max-w-md w-full text-center">
+    <h2 class="text-2xl font-semibold text-gray-800">Dự đoán chữ số viết tay</h2>
+    <p class="text-gray-600 mb-4">Tải lên ảnh PNG để nhận dự đoán</p>
+
+    <form id="uploadForm" class="space-y-4">
+      <input type="file" name="file" id="fileInput" accept="image/png" 
+             class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-lg file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100" required>
+      
+      <div id="previewContainer" class="hidden">
+        <h3 class="text-gray-700 text-sm">Xem trước ảnh:</h3>
+        <img id="preview" class="max-w-full h-40 mx-auto rounded-lg border" alt="Preview ảnh">
+      </div>
+      
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Gửi và Dự đoán</button>
+    </form>
+
+    <div class="mt-4 text-lg font-medium text-gray-700">
+      <h3>Kết quả:</h3>
+      <p id="result" class="text-blue-500">Chưa có kết quả.</p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const result = document.getElementById('result');
+    const preview = document.getElementById('preview');
+    const previewContainer = document.getElementById('previewContainer');
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        result.textContent = 'Vui lòng chọn ảnh.';
+        return;
+      }
+
+      // Xem trước ảnh
+      const reader = new FileReader();
+      reader.onload = () => {
+        preview.src = reader.result;
+        previewContainer.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+
+      // Gửi ảnh lên API
+      const formData = new FormData();
+      formData.append('file', file);
+
+      result.textContent = 'Đang dự đoán...';
+      result.classList.remove('text-blue-500');
+      result.classList.add('text-gray-500');
+      
+      try {
+        const response = await fetch('http://127.0.0.1:8000/predict', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (data.prediction !== undefined) {
+          result.textContent = `Dự đoán: ${data.prediction}`;
+          result.classList.replace('text-gray-500', 'text-green-600');
+        } else {
+          result.textContent = `Lỗi: ${data.error || "Không xác định"}`;
+          result.classList.replace('text-gray-500', 'text-red-600');
+        }
+      } catch (err) {
+        result.textContent = 'Lỗi khi gửi ảnh đến API.';
+        result.classList.replace('text-gray-500', 'text-red-600');
+        console.error(err);
+      }
+    });
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+</body>
+</html>
